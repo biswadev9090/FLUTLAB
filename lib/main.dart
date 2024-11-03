@@ -22,58 +22,20 @@ class ProjectDetailsForm extends StatefulWidget {
 class _ProjectDetailsFormState extends State<ProjectDetailsForm> {
   final _formKey = GlobalKey<FormState>();
   final PageController _pageController = PageController();
+  int _currentPage = 0;
 
-  // Stage 1: Basic Project Information
-  String? _projectNumber;
-  String? _projectObjective;
-  List<String> _deliverables = [];
-  DateTime? _startDate;
-  DateTime? _endDate;
+  // Project information
+  String? _projectNumber,
+      _projectObjective,
+      _paymentTerms,
+      _performanceCriteria,
+      _roleDescription;
+  double? _projectBudget, _bidSecurityAmount;
+  DateTime? _startDate, _endDate;
 
-  // Stage 2: Financial Details
-  double? _projectBudget;
-  double? _bidSecurityAmount;
-  String? _paymentTerms;
-
-  // Stage 3: Technical Requirements
-  List<String> _technicalRequirements = [];
-  List<String> _qualityStandards = [];
-  String? _performanceCriteria;
-
-  // Stage 4: Documentation and Compliance
-  List<String> _requiredDocuments = [];
-  List<String> _regulatoryCompliance = [];
-
-  // Stage 5: Evaluation and Selection Criteria
-  List<String> _evaluationCriteria = [];
-  String? _selectionMethod;
-  String? _notes;
-
-  // Stage 6: Category of Work
-  String? _category;
-  String? _subcategory;
-  int? _roleId;
-  String? _roleName;
-
-  void _nextPage() {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save(); // Save form values
-      if (_pageController.page!.toInt() < 5) {
-        _pageController.nextPage(
-            duration: Duration(milliseconds: 300), curve: Curves.easeIn);
-      } else {
-        // Final submission can happen here
-        print("Final Submission:");
-        print("Project Number: $_projectNumber");
-        // Continue printing other fields...
-      }
-    }
-  }
-
-  String? _selectedCategory;
-  String? _selectedSubcategory;
+  // Category data
+  String? _selectedCategory, _selectedSubcategory;
   int? _selectedRoleId;
-  String? _roleDescription;
 
   // Sample data for categories, subcategories, and roles
   final List<Map<String, dynamic>> categories = [
@@ -86,14 +48,12 @@ class _ProjectDetailsFormState extends State<ProjectDetailsForm> {
             {
               'id': 1,
               'name': 'Product Specialists',
-              'description':
-                  'Provide expert knowledge about products, recommend solutions, and assist customers with specialized needs.'
+              'description': 'Provide expert knowledge about products.'
             },
             {
               'id': 2,
               'name': 'Retail Managers',
-              'description':
-                  'Supervise retail operations, including staff management, inventory, and customer service.'
+              'description': 'Supervise retail operations.'
             },
           ]
         },
@@ -103,38 +63,80 @@ class _ProjectDetailsFormState extends State<ProjectDetailsForm> {
             {
               'id': 3,
               'name': 'Cashiers',
-              'description':
-                  'Process payments, handle customer transactions, and manage checkout areas.'
+              'description': 'Process payments and handle transactions.'
             },
             {
               'id': 4,
               'name': 'Retail Stock Clerks',
-              'description':
-                  'Restock shelves, manage inventory, and assist with product placement.'
+              'description': 'Restock shelves and manage inventory.'
             },
             {
               'id': 5,
               'name': 'Customer Service Representatives',
-              'description':
-                  'Handle inquiries, process returns, and assist customers with basic issues.'
+              'description': 'Handle inquiries and assist customers.'
             },
             {
               'id': 6,
               'name': 'Self-Checkout Attendants',
-              'description':
-                  'Help customers use self-service checkout systems and resolve any issues that arise.'
+              'description': 'Help customers use checkout systems.'
             },
             {
               'id': 7,
               'name': 'Greeters',
-              'description':
-                  'Welcome customers at the entrance of stores, provide information, and assist with navigation.'
+              'description': 'Welcome customers and provide information.'
             },
           ]
         },
       ],
     },
   ];
+  void _nextPage() {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+      if (_currentPage < 5) {
+        _pageController.nextPage(
+            duration: Duration(milliseconds: 300), curve: Curves.easeIn);
+      } else {
+        // Final submission can happen here
+        // Navigate to the summary page
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => SummaryPage(
+                    projectNumber: _projectNumber,
+                    projectObjective: _projectObjective,
+                    startDate: _startDate,
+                    projectBudget: _projectBudget,
+                    bidSecurityAmount: _bidSecurityAmount,
+                    paymentTerms: _paymentTerms,
+                    performanceCriteria: _performanceCriteria,
+                    selectedCategory: _selectedCategory,
+                    selectedSubcategory: _selectedSubcategory,
+                    selectedRoleId: _selectedRoleId,
+                    roleDescription: _roleDescription,
+                  )),
+        );
+      }
+    }
+  }
+
+  void _previousPage() {
+    if (_currentPage > 0) {
+      _pageController.previousPage(
+          duration: Duration(milliseconds: 300), curve: Curves.easeIn);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController.addListener(() {
+      setState(() {
+        _currentPage = _pageController.page!.toInt();
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -153,118 +155,74 @@ class _ProjectDetailsFormState extends State<ProjectDetailsForm> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _nextPage,
-        child: Icon(Icons.navigate_next),
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          if (_currentPage >
+              0) // Only show the back button if not on the first page
+            FloatingActionButton(
+              onPressed: _previousPage,
+              child: Icon(Icons.navigate_before),
+              heroTag: null,
+            ),
+          SizedBox(width: 16), // Space between buttons
+          FloatingActionButton(
+            onPressed: _nextPage,
+            child: Icon(Icons.navigate_next),
+            heroTag: null,
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildBasicInfoPage() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          TextFormField(
-            decoration: InputDecoration(labelText: 'Project Number'),
-            onSaved: (value) => _projectNumber = value,
-            validator: (value) =>
-                value!.isEmpty ? 'Enter project number' : null,
-          ),
-          TextFormField(
-            decoration: InputDecoration(labelText: 'Project Objective'),
-            onSaved: (value) => _projectObjective = value,
-            validator: (value) =>
-                value!.isEmpty ? 'Enter project objective' : null,
-          ),
-          // Add other fields like deliverables, start date etc.
-          // Example for Start Date
-          ListTile(
-            title: Text(
-                'Start Date: ${_startDate != null ? DateFormat('yyyy-MM-dd').format(_startDate!) : 'Select a date'}'),
-            trailing: Icon(Icons.calendar_today),
-            onTap: () async {
-              DateTime? picked = await showDatePicker(
-                context: context,
-                initialDate: _startDate ?? DateTime.now(),
-                firstDate: DateTime(2000),
-                lastDate: DateTime(2101),
-              );
-              if (picked != null) {
-                setState(() {
-                  _startDate = picked;
-                });
-              }
-            },
-          ),
-        ],
-      ),
+    return _buildPage(
+      children: [
+        _buildTextFormField('Project Number',
+            onSaved: (value) => _projectNumber = value),
+        _buildTextFormField('Project Objective',
+            onSaved: (value) => _projectObjective = value),
+        _buildDatePicker('Start Date', _startDate,
+            (picked) => setState(() => _startDate = picked)),
+      ],
     );
   }
 
   Widget _buildFinancialDetailsPage() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          TextFormField(
-            decoration: InputDecoration(labelText: 'Project Budget'),
+    return _buildPage(
+      children: [
+        _buildTextFormField('Project Budget',
             keyboardType: TextInputType.number,
-            onSaved: (value) => _projectBudget = double.tryParse(value!),
-            validator: (value) =>
-                value!.isEmpty ? 'Enter project budget' : null,
-          ),
-          TextFormField(
-            decoration: InputDecoration(labelText: 'Bid Security Amount'),
+            onSaved: (value) => _projectBudget = double.tryParse(value!)),
+        _buildTextFormField('Bid Security Amount',
             keyboardType: TextInputType.number,
-            onSaved: (value) => _bidSecurityAmount = double.tryParse(value!),
-            validator: (value) =>
-                value!.isEmpty ? 'Enter bid security amount' : null,
-          ),
-          TextFormField(
-            decoration: InputDecoration(labelText: 'Payment Terms'),
-            onSaved: (value) => _paymentTerms = value,
-          ),
-        ],
-      ),
+            onSaved: (value) => _bidSecurityAmount = double.tryParse(value!)),
+        _buildTextFormField('Payment Terms',
+            onSaved: (value) => _paymentTerms = value),
+      ],
     );
   }
 
   Widget _buildTechnicalRequirementsPage() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          // Fields for technical requirements and quality standards
-          TextFormField(
-            decoration: InputDecoration(labelText: 'Performance Criteria'),
-            onSaved: (value) => _performanceCriteria = value,
-          ),
-        ],
-      ),
+    return _buildPage(
+      children: [
+        _buildTextFormField('Performance Criteria',
+            onSaved: (value) => _performanceCriteria = value),
+      ],
     );
   }
 
   Widget _buildDocumentationPage() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          // Fields for required documents and regulatory compliance
-        ],
-      ),
-    );
+    return _buildPage(children: [
+      // Fields for required documents and regulatory compliance can be added here
+    ]);
   }
 
   Widget _buildEvaluationPage() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          // Fields for evaluation criteria, selection method, and notes
-        ],
-      ),
-    );
+    return _buildPage(children: [
+      // Fields for evaluation criteria, selection method, and notes can be added here
+    ]);
   }
 
   Widget _buildCategoryOfWorkPage() {
@@ -352,14 +310,136 @@ class _ProjectDetailsFormState extends State<ProjectDetailsForm> {
             validator: (value) => value == null ? 'Select a role ID' : null,
           ),
           SizedBox(height: 16.0), // Space between dropdowns
-          TextFormField(
-            decoration: InputDecoration(labelText: 'Description'),
-            readOnly:
-                true, // Make it read-only since it's derived from the selected role ID
-            initialValue: _roleDescription,
-            onSaved: (value) => _roleDescription = value,
-          ),
+          // Show the role description
+          if (_roleDescription != null)
+            Text(
+              'Role Description: $_roleDescription',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryPage() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Project Number: $_projectNumber'),
+          Text('Project Objective: $_projectObjective'),
+          Text(
+              'Start Date: ${_startDate != null ? DateFormat('yyyy-MM-dd').format(_startDate!) : 'N/A'}'),
+          Text('Budget: \$${_projectBudget?.toStringAsFixed(2) ?? 'N/A'}'),
+          Text(
+              'Bid Security Amount: \$${_bidSecurityAmount?.toStringAsFixed(2) ?? 'N/A'}'),
+          Text('Payment Terms: $_paymentTerms'),
+          Text('Performance Criteria: $_performanceCriteria'),
+          Text('Selected Category: $_selectedCategory'),
+          Text('Selected Subcategory: $_selectedSubcategory'),
+          Text('Selected Role ID: $_selectedRoleId'),
+          Text('Role Description: $_roleDescription'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPage({required List<Widget> children}) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: children,
+      ),
+    );
+  }
+
+  Widget _buildTextFormField(String label,
+      {TextInputType? keyboardType,
+      ValueChanged<String?>? onSaved,
+      bool readOnly = false,
+      String? initialValue}) {
+    return TextFormField(
+      decoration: InputDecoration(labelText: label),
+      keyboardType: keyboardType,
+      onSaved: onSaved,
+      readOnly: readOnly,
+      initialValue: initialValue,
+      validator: (value) => value!.isEmpty ? 'Enter $label' : null,
+    );
+  }
+
+  Widget _buildDatePicker(
+      String label, DateTime? date, Function(DateTime?) onDateSelected) {
+    return ListTile(
+      title: Text(
+          '$label: ${date != null ? DateFormat('yyyy-MM-dd').format(date) : 'Select a date'}'),
+      trailing: Icon(Icons.calendar_today),
+      onTap: () async {
+        DateTime? picked = await showDatePicker(
+          context: context,
+          initialDate: date ?? DateTime.now(),
+          firstDate: DateTime(2000),
+          lastDate: DateTime(2101),
+        );
+        onDateSelected(picked);
+      },
+    );
+  }
+}
+
+class SummaryPage extends StatelessWidget {
+  final String? projectNumber;
+  final String? projectObjective;
+  final DateTime? startDate;
+  final double? projectBudget;
+  final double? bidSecurityAmount;
+  final String? paymentTerms;
+  final String? performanceCriteria;
+  final String? selectedCategory;
+  final String? selectedSubcategory;
+  final int? selectedRoleId;
+  final String? roleDescription;
+
+  const SummaryPage({
+    Key? key,
+    this.projectNumber,
+    this.projectObjective,
+    this.startDate,
+    this.projectBudget,
+    this.bidSecurityAmount,
+    this.paymentTerms,
+    this.performanceCriteria,
+    this.selectedCategory,
+    this.selectedSubcategory,
+    this.selectedRoleId,
+    this.roleDescription,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Summary')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Project Number: $projectNumber'),
+            Text('Project Objective: $projectObjective'),
+            Text(
+                'Start Date: ${startDate != null ? DateFormat('yyyy-MM-dd').format(startDate!) : 'N/A'}'),
+            Text('Budget: \$${projectBudget?.toStringAsFixed(2) ?? 'N/A'}'),
+            Text(
+                'Bid Security Amount: \$${bidSecurityAmount?.toStringAsFixed(2) ?? 'N/A'}'),
+            Text('Payment Terms: $paymentTerms'),
+            Text('Performance Criteria: $performanceCriteria'),
+            Text('Selected Category: $selectedCategory'),
+            Text('Selected Subcategory: $selectedSubcategory'),
+            Text('Selected Role ID: $selectedRoleId'),
+            Text('Role Description: $roleDescription'),
+          ],
+        ),
       ),
     );
   }
